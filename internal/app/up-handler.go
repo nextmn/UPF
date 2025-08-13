@@ -293,16 +293,7 @@ func handleIncommingPacket(gtpIface netip.Addr, db *FARAssociationDB, packet []b
 		case ohc.HasPortNumber():
 			// forward over UDP/IP
 			port := ohcfields.PortNumber
-			var udpaddr string
-			if strings.Count(ipAddress, ":") > 0 {
-				udpaddr = fmt.Sprintf("[%s]:%s", ipAddress, port)
-			} else {
-				udpaddr = fmt.Sprintf("%s:%s", ipAddress, port)
-			}
-			raddr, err := net.ResolveUDPAddr("udp", udpaddr)
-			if err != nil {
-				return err
-			}
+			raddr := net.UDPAddrFromAddrPort(netip.AddrPortFrom(netIpAddr, port))
 			udpConn, err := net.DialUDP("udp", nil, raddr)
 			if err != nil {
 				return err
