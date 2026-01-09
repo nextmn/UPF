@@ -6,6 +6,7 @@ BASHCOMPLETIONSDIR = $(exec_prefix)/share/bash-completion/completions
 
 RM = rm -f
 INSTALL = install -D
+MKDIRP = mkdir -p
 
 .PHONY: install uninstall update build clean default
 default: build
@@ -14,15 +15,13 @@ build:
 clean:
 	go clean
 reinstall: uninstall install
-update:
-	go get -u github.com/nextmn/go-pfcp-networking@master
-	go mod tidy
 install:
 	$(INSTALL) upf $(DESTDIR)$(bindir)/upf
-	$(INSTALL) bash-completion/completions/upf $(DESTDIR)$(BASHCOMPLETIONSDIR)/upf
+	$(MKDIRP) $(DESTDIR)$(BASHCOMPLETIONSDIR)
+	$(DESTDIR)$(bindir)/upf completion bash > $(DESTDIR)$(BASHCOMPLETIONSDIR)/upf
 	@echo "================================="
 	@echo ">> Now run the following command:"
-	@echo -e "\tsource $(DESTDIR)$(BASHCOMPLETIONSDIR)/upf"
+	@echo "\tsource $(DESTDIR)$(BASHCOMPLETIONSDIR)/upf"
 	@echo "================================="
 uninstall:
 	$(RM) $(DESTDIR)$(bindir)/upf
