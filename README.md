@@ -59,7 +59,7 @@ sysctls:
 ```
 
 ## Author
-Louis Royer
+Louis Royer and the NextMN Contributors
 
 ## License
 MIT
