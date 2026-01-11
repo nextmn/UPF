@@ -37,7 +37,7 @@ func NewSetup(config *config.UpfConfig) *Setup {
 }
 func (s *Setup) Init(ctx context.Context) error {
 	if s.config.Gtpu.Forwarder != "wmnsk/go-gtp" {
-		return fmt.Errorf("Only `wmnsk/go-gtp forwarder is supported`")
+		return fmt.Errorf("only `wmnsk/go-gtp forwarder is supported`")
 	}
 	// setup pfcpEntityOptions
 	if s.config.Pfcp.RetransTimeout != nil {
@@ -78,10 +78,8 @@ func (s *Setup) Run(ctx context.Context) error {
 	if err := s.Init(ctx); err != nil {
 		return err
 	}
-	select {
-	case <-ctx.Done():
-		return nil
-	}
+	<-ctx.Done()
+	return nil
 }
 
 func (s *Setup) Exit() error {

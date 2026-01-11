@@ -6,8 +6,8 @@
 package config
 
 import (
-	"io/ioutil"
 	"net/netip"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -20,7 +20,7 @@ func ParseConf(file string) (*UpfConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	yamlFile, err := ioutil.ReadFile(path)
+	yamlFile, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}

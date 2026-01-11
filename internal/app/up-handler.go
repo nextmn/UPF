@@ -141,7 +141,7 @@ func handleOuterHeaderRemoval(packet []byte, isGTP bool, outerHeaderRemoval *ie.
 	case 7:
 		fallthrough //VLAN S-TAG
 	case 8: //S-TAG and C-TAG
-		return nil, nil, fmt.Errorf("Could not handle outer header removal with description field set to : %d", description)
+		return nil, nil, fmt.Errorf("could not handle outer header removal with description field set to %d", description)
 	case 0:
 		fallthrough // GTP-U/UDP/IPv4
 	case 1:
@@ -152,7 +152,7 @@ func handleOuterHeaderRemoval(packet []byte, isGTP bool, outerHeaderRemoval *ie.
 		// TODO: when 9 to 255, send and response with cause Mandatory IE incorrect: Offending IE type outerHeaderRemoval
 		// note: this should be done directly into go-pfcp-networking
 		if !isGTP {
-			return nil, nil, fmt.Errorf("Could not handle outer header removal of non-GTP packet")
+			return nil, nil, fmt.Errorf("could not handle outer header removal of non-GTP packet")
 		}
 		var h message.Header
 		err := h.UnmarshalBinary(packet)
@@ -225,7 +225,7 @@ func handleIncommingPacket(gtpIface netip.Addr, db *FARAssociationDB, packet []b
 		}
 	}
 	if len(packet) == 0 {
-		return fmt.Errorf("Incomming packet of len 0")
+		return fmt.Errorf("incomming packet of len 0")
 	}
 
 	// TODO: apply instruction of associated MARs, QERs, URRs, etc.
@@ -255,7 +255,7 @@ func handleIncommingPacket(gtpIface netip.Addr, db *FARAssociationDB, packet []b
 
 	fp, err := far.ForwardingParameters()
 	if err != nil {
-		return fmt.Errorf("Apply action is has FORW, but there is no ForwardingParameters")
+		return fmt.Errorf("apply action is has FORW, but there is no ForwardingParameters")
 	}
 	ohcfields, _ := fp.OuterHeaderCreation()
 
@@ -313,7 +313,7 @@ func handleIncommingPacket(gtpIface netip.Addr, db *FARAssociationDB, packet []b
 			defer ipConn.Close()
 			ipConn.Write(packet)
 		default:
-			return fmt.Errorf("Unsupported option in Outer Header Creation Description")
+			return fmt.Errorf("unsupported option in Outer Header Creation Description")
 		}
 	} else {
 		// forward using TUN interface
@@ -377,7 +377,7 @@ func forwardGTP(gtpIface netip.Addr, gpdu *message.Header, ipAddress netip.Addr,
 				select {} // FIXME: use context
 			}
 		}(ch)
-		_ = <-ch
+		<-ch
 	}
 	if b, err := gpdu.Marshal(); err == nil {
 		logrus.WithFields(logrus.Fields{"remote-addr": raddr, "teid": gpdu.TEID}).Debug("Forwarding gpdu")
@@ -452,7 +452,7 @@ func pfcpSessionLookUp(isGTP bool, teid uint32, iface string, pdu []byte, pfcpSe
 	if wilcard != nil {
 		return wilcard, nil
 	}
-	return nil, fmt.Errorf("Cannot find PFCP Session for this PDU")
+	return nil, fmt.Errorf("cannot find PFCP Session for this PDU")
 }
 func pfcpSessionPDRLookUp(session api.PFCPSessionInterface, isGTP bool, teid uint32, iface string, pdu []byte) (pdr api.PDRInterface, err error) {
 	for _, pdrid := range session.GetSortedPDRIDs() {
@@ -470,7 +470,7 @@ func pfcpSessionPDRLookUp(session api.PFCPSessionInterface, isGTP bool, teid uin
 			return pdr, nil
 		}
 	}
-	return nil, fmt.Errorf("Could not find PDR for TEID %d", teid)
+	return nil, fmt.Errorf("could not find PDR for TEID %d", teid)
 }
 
 func isPDIAllWilcard(pdi *ie.IE) bool {
@@ -550,7 +550,7 @@ func checkUEIPAddress(ueipaddress *ie.UEIPAddressFields, sourceInterface uint8, 
 		return false, fmt.Errorf("PDU is not IPv4 or IPv6")
 	}
 	if ueipaddress == nil {
-		return false, fmt.Errorf("Invalid UE IP Address")
+		return false, fmt.Errorf("invalid UE IP Address")
 	}
 	if sourceInterface == ie.SrcInterfaceAccess {
 		// check ip src field
@@ -621,7 +621,7 @@ type PDUAddr struct {
 func checkIPFilterRule(rule string, sourceInterface uint8, pdu []byte) (res bool, err error) {
 	r := strings.Split(rule, " ")
 	if r[3] != "from" || (r[5] != "to" && r[6] != "to") {
-		return false, fmt.Errorf("Malformed IP Filter Rule")
+		return false, fmt.Errorf("malformed IP Filter Rule")
 	}
 	filter := FlowDescriptionAVPPFCP{
 		Action:    r[0],
@@ -719,7 +719,7 @@ func CompareIP(filterIp string, pduIp net.IP) (bool, error) {
 		} else {
 			fIp := net.ParseIP(filterIp)
 			if fIp == nil {
-				return false, fmt.Errorf("Invalid IP address in SDF Flow Description")
+				return false, fmt.Errorf("invalid IP address in SDF Flow Description")
 			}
 			if !fIp.Equal(pduIp) {
 				logrus.WithFields(logrus.Fields{"filter-ip": filterIp, "pdu-ip": pduIp}).Debug("no match")

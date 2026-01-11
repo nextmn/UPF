@@ -20,7 +20,7 @@ import (
 
 func (s *Setup) createTUNInterface() error {
 	if s.tunInterface == nil {
-		return fmt.Errorf("Tun interface has not been created")
+		return fmt.Errorf("TUN interface has not been created")
 	}
 	var gtpEntity netip.Addr
 	if len(s.config.Gtpu.GTPUProtocolEntities) > 0 {
@@ -48,7 +48,7 @@ func (s *Setup) createTUNInterface() error {
 
 func (s *Setup) createDLRoutes() error {
 	if s.tunInterface == nil {
-		return fmt.Errorf("Tun interface has not been created")
+		return fmt.Errorf("TUN interface has not been created")
 	}
 	for _, ue := range s.config.DNNList {
 		err := runIP("route", "add", ue.Cidr, "dev", s.tunInterface.Name(), "proto", "static")
