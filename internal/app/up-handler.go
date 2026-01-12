@@ -57,7 +57,7 @@ func (db *FARAssociationDB) Get(seid uint64, farid uint32) *gtpv1.UPlaneConn {
 	return nil
 }
 
-func ipPacketHandler(gtpEntity netip.Addr, packet []byte, db *FARAssociationDB, tuniface *water.Interface, pfcpServer *pfcp_networking.PFCPEntityUP) error {
+func ipPacketHandler(ctx context.Context, gtpEntity netip.Addr, packet []byte, db *FARAssociationDB, tuniface *water.Interface, pfcpServer *pfcp_networking.PFCPEntityUP) error {
 	logrus.Debug("Received IP packet on TUN interface")
 	pfcpSession, err := pfcpSessionLookUp(false, 0, "", packet, pfcpServer)
 	if err != nil {
@@ -85,11 +85,11 @@ func ipPacketHandler(gtpEntity netip.Addr, packet []byte, db *FARAssociationDB, 
 		}
 		return err
 	}
-	handleIncommingPacket(gtpEntity, db, packet, false, pfcpSession, pdr, tuniface)
+	handleIncommingPacket(ctx, gtpEntity, db, packet, false, pfcpSession, pdr, tuniface)
 	return nil
 }
 
-func tpduHandler(iface netip.Addr, c gtpv1.Conn, senderAddr net.Addr, msg message.Message, db *FARAssociationDB, tuniface *water.Interface, pfcpServer *pfcp_networking.PFCPEntityUP) error {
+func tpduHandler(ctx context.Context, iface netip.Addr, c gtpv1.Conn, senderAddr net.Addr, msg message.Message, db *FARAssociationDB, tuniface *water.Interface, pfcpServer *pfcp_networking.PFCPEntityUP) error {
 	logrus.WithFields(logrus.Fields{
 		"sender":    senderAddr,
 		"teid":      msg.TEID(),
@@ -123,7 +123,7 @@ func tpduHandler(iface netip.Addr, c gtpv1.Conn, senderAddr net.Addr, msg messag
 		"teid":      msg.TEID(),
 		"interface": iface,
 	}).Debug("Found PDR associated on this packet")
-	handleIncommingPacket(iface, db, packet, true, pfcpSession, pdr, tuniface)
+	handleIncommingPacket(ctx, iface, db, packet, true, pfcpSession, pdr, tuniface)
 	return nil
 }
 
@@ -198,10 +198,9 @@ func handleOuterHeaderRemoval(packet []byte, isGTP bool, outerHeaderRemoval *ie.
 		}
 		return packet, headers, nil
 	}
-	return packet, nil, nil
 }
 
-func handleIncommingPacket(gtpIface netip.Addr, db *FARAssociationDB, packet []byte, isGTP bool, session api.PFCPSessionInterface, pdr api.PDRInterface, tuniface *water.Interface) error {
+func handleIncommingPacket(ctx context.Context, gtpIface netip.Addr, db *FARAssociationDB, packet []byte, isGTP bool, session api.PFCPSessionInterface, pdr api.PDRInterface, tuniface *water.Interface) error {
 	if logrus.IsLevelEnabled(logrus.TraceLevel) {
 		pdrid, err := pdr.ID()
 		if err == nil {
@@ -286,9 +285,9 @@ func handleIncommingPacket(gtpIface netip.Addr, db *FARAssociationDB, packet []b
 			}
 			tlm, err := fp.TransportLevelMarking()
 			if err == nil {
-				return forwardGTP(gtpIface, gpdu, netIpAddr, int(tlm>>8), session, farid, db)
+				return forwardGTP(ctx, gtpIface, gpdu, netIpAddr, int(tlm>>8), session, farid, db)
 			} else {
-				return forwardGTP(gtpIface, gpdu, netIpAddr, 0, session, farid, db)
+				return forwardGTP(ctx, gtpIface, gpdu, netIpAddr, 0, session, farid, db)
 			}
 		case ohc.HasPortNumber():
 			// forward over UDP/IP
@@ -346,7 +345,7 @@ func handleIncommingPacket(gtpIface netip.Addr, db *FARAssociationDB, packet []b
 
 }
 
-func forwardGTP(gtpIface netip.Addr, gpdu *message.Header, ipAddress netip.Addr, dscpecn int, session api.PFCPSessionInterface, farid uint32, db *FARAssociationDB) error {
+func forwardGTP(ctx context.Context, gtpIface netip.Addr, gpdu *message.Header, ipAddress netip.Addr, dscpecn int, session api.PFCPSessionInterface, farid uint32, db *FARAssociationDB) error {
 	raddr := net.UDPAddrFromAddrPort(netip.AddrPortFrom(ipAddress, constants.GTPU_PORT))
 	// Check Uconn exists for this FAR
 	seid, err := session.LocalSEID()
@@ -361,23 +360,17 @@ func forwardGTP(gtpIface netip.Addr, gpdu *message.Header, ipAddress netip.Addr,
 		// Port or the Flow Label field (see IETF RFC 6437 [37]) should be set dynamically by the sending GTP-U entity to help
 		// balancing the load in the transport network.
 		laddr := net.UDPAddrFromAddrPort(netip.AddrPortFrom(gtpIface, 0))
-		ch := make(chan bool)
-		go func(ch chan bool) error {
-			ctx, cancel := context.WithCancel(context.Background()) // FIXME: use context
-			defer cancel()
-			uConn, err = gtpv1.DialUPlane(ctx, laddr, raddr)
-			if err != nil {
-				logrus.WithError(err).Error("Dial failure")
-				return err
-			}
-			defer uConn.Close()
-			db.Add(seid, farid, uConn)
-			close(ch)
-			for {
-				select {} // FIXME: use context
-			}
-		}(ch)
-		<-ch
+		uConn, err = gtpv1.DialUPlane(ctx, laddr, raddr)
+		if err != nil {
+			logrus.WithError(err).Error("Dial failure")
+			return err
+		}
+		go func(ctx context.Context) {
+			// TODO: maybe also cleanup on a timeout?
+			<-ctx.Done()
+			uConn.Close()
+		}(ctx)
+		db.Add(seid, farid, uConn)
 	}
 	if b, err := gpdu.Marshal(); err == nil {
 		logrus.WithFields(logrus.Fields{"remote-addr": raddr, "teid": gpdu.TEID}).Debug("Forwarding gpdu")

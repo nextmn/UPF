@@ -17,23 +17,21 @@ import (
 	"github.com/wmnsk/go-gtp/gtpv1/message"
 )
 
-func (s *Setup) createGTPUProtocolEntities() error {
+func (s *Setup) createGTPUProtocolEntities(ctx context.Context) error {
 	for _, v := range s.config.Gtpu.GTPUProtocolEntities {
-		go s.createGtpUProtocolEntity(v.Addr)
+		go s.createGtpUProtocolEntity(ctx, v.Addr)
 	}
 	return nil
 }
 
-func (s *Setup) createGtpUProtocolEntity(ipAddress netip.Addr) error {
+func (s *Setup) createGtpUProtocolEntity(ctx context.Context, ipAddress netip.Addr) error {
 	logrus.WithFields(logrus.Fields{"listen-addr": ipAddress}).Info("Creating new GTP-U Protocol Entity")
 	laddr := net.UDPAddrFromAddrPort(netip.AddrPortFrom(ipAddress, constants.GTPU_PORT))
 	uConn := gtpv1.NewUPlaneConn(laddr)
 	defer uConn.Close()
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 	uConn.DisableErrorIndication()
 	uConn.AddHandler(message.MsgTypeTPDU, func(c gtpv1.Conn, senderAddr net.Addr, msg message.Message) error {
-		return tpduHandler(ipAddress, c, senderAddr, msg, s.farUconnDb, s.tunInterface, s.pfcpServer)
+		return tpduHandler(ctx, ipAddress, c, senderAddr, msg, s.farUconnDb, s.tunInterface, s.pfcpServer)
 	})
 	if err := uConn.ListenAndServe(ctx); err != nil {
 		return err

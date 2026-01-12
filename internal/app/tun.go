@@ -6,6 +6,7 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"net/netip"
 	"strconv"
@@ -18,7 +19,7 @@ import (
 	"github.com/songgao/water"
 )
 
-func (s *Setup) createTUNInterface() error {
+func (s *Setup) createTUNInterface(ctx context.Context) error {
 	if s.tunInterface == nil {
 		return fmt.Errorf("TUN interface has not been created")
 	}
@@ -26,32 +27,35 @@ func (s *Setup) createTUNInterface() error {
 	if len(s.config.Gtpu.GTPUProtocolEntities) > 0 {
 		gtpEntity = s.config.Gtpu.GTPUProtocolEntities[0].Addr
 	}
-	go func() error {
-
+	go func(ctx context.Context) error {
 		for {
-			packet := make([]byte, constants.MTU_GTP_TUN)
-			n, err := s.tunInterface.Read(packet)
-			if err != nil {
-				return err
-			}
-			go func(packet []byte, db *FARAssociationDB, tuniface *water.Interface, pfcpServer *pfcp_networking.PFCPEntityUP) {
-				err := ipPacketHandler(gtpEntity, packet, db, tuniface, pfcpServer)
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			default:
+				packet := make([]byte, constants.MTU_GTP_TUN)
+				n, err := s.tunInterface.Read(packet)
 				if err != nil {
-					logrus.WithError(err).Debug("Drop packet")
+					return err
 				}
-			}(packet[:n], s.farUconnDb, s.tunInterface, s.pfcpServer)
+				go func(ctx context.Context, packet []byte, db *FARAssociationDB, tuniface *water.Interface, pfcpServer *pfcp_networking.PFCPEntityUP) {
+					err := ipPacketHandler(ctx, gtpEntity, packet, db, tuniface, pfcpServer)
+					if err != nil {
+						logrus.WithError(err).Debug("Drop packet")
+					}
+				}(ctx, packet[:n], s.farUconnDb, s.tunInterface, s.pfcpServer)
+			}
 		}
-		return nil
-	}()
+	}(ctx)
 	return nil
 }
 
-func (s *Setup) createDLRoutes() error {
+func (s *Setup) createDLRoutes(ctx context.Context) error {
 	if s.tunInterface == nil {
 		return fmt.Errorf("TUN interface has not been created")
 	}
 	for _, ue := range s.config.DNNList {
-		err := runIP("route", "add", ue.Cidr, "dev", s.tunInterface.Name(), "proto", "static")
+		err := runIP(ctx, "route", "add", ue.Cidr, "dev", s.tunInterface.Name(), "proto", "static")
 		if err != nil {
 			logrus.WithError(err).WithFields(logrus.Fields{"prefix": ue.Cidr}).Error("Cannot create Uplink route for this prefix")
 			return err
@@ -60,18 +64,18 @@ func (s *Setup) createDLRoutes() error {
 	return nil
 }
 
-func (s *Setup) removeTun() error {
+func (s *Setup) removeTun(ctx context.Context) error {
 	if s.tunInterface == nil {
 		return nil
 	}
-	err := runIP("link", "del", s.tunInterface.Name())
+	err := runIP(ctx, "link", "del", s.tunInterface.Name())
 	if nil != err {
 		logrus.WithError(err).WithFields(logrus.Fields{"interface": s.tunInterface.Name()}).Error("Unable to delete interface")
 		return err
 	}
 	return nil
 }
-func (s *Setup) createTun() error {
+func (s *Setup) createTun(ctx context.Context) error {
 	config := water.Config{
 		DeviceType: water.TUN,
 	}
@@ -83,7 +87,7 @@ func (s *Setup) createTun() error {
 		logrus.WithError(err).Error("Unable to allocate TUN interface")
 		return err
 	}
-	err = runIP("link", "set", "dev", iface.Name(), "mtu", strconv.Itoa(constants.MTU_GTP_TUN))
+	err = runIP(ctx, "link", "set", "dev", iface.Name(), "mtu", strconv.Itoa(constants.MTU_GTP_TUN))
 	if nil != err {
 		logrus.WithError(err).WithFields(logrus.Fields{
 			"mtu":       constants.MTU_GTP_TUN,
@@ -91,7 +95,7 @@ func (s *Setup) createTun() error {
 		}).Error("Unable to set MTU")
 		return err
 	}
-	err = runIP("link", "set", "dev", iface.Name(), "up")
+	err = runIP(ctx, "link", "set", "dev", iface.Name(), "up")
 	if nil != err {
 		logrus.WithError(err).WithFields(logrus.Fields{
 			"interface": iface.Name(),
@@ -100,12 +104,12 @@ func (s *Setup) createTun() error {
 	}
 	s.tunInterface = iface
 
-	err = runIPTables("-A", "OUTPUT", "-o", iface.Name(), "-p", "icmp", "--icmp-type", "redirect", "-j", "DROP")
+	err = runIPTables(ctx, "-A", "OUTPUT", "-o", iface.Name(), "-p", "icmp", "--icmp-type", "redirect", "-j", "DROP")
 	if err != nil {
 		logrus.WithError(err).WithFields(logrus.Fields{"interface": iface.Name()}).Error("Error while setting iptable rule to drop icmp redirects")
 		return err
 	}
-	err = runIP6Tables("-A", "OUTPUT", "-o", iface.Name(), "-p", "icmpv6", "--icmpv6-type", "redirect", "-j", "DROP")
+	err = runIP6Tables(ctx, "-A", "OUTPUT", "-o", iface.Name(), "-p", "icmpv6", "--icmpv6-type", "redirect", "-j", "DROP")
 	if err != nil {
 		logrus.WithError(err).WithFields(logrus.Fields{"interface": iface.Name()}).Error("Error while setting iptable rule to drop icmpv6 redirects")
 		return err

@@ -57,16 +57,16 @@ func (s *Setup) Init(ctx context.Context) error {
 	if err := s.pfcpServer.WaitReady(ctxTimeout); err != nil {
 		return err
 	}
-	if err := s.createTun(); err != nil {
+	if err := s.createTun(ctx); err != nil {
 		return err
 	}
-	if err := s.createTUNInterface(); err != nil {
+	if err := s.createTUNInterface(ctx); err != nil {
 		return nil
 	}
-	if err := s.createDLRoutes(); err != nil {
+	if err := s.createDLRoutes(ctx); err != nil {
 		return err
 	}
-	if err := s.createGTPUProtocolEntities(); err != nil {
+	if err := s.createGTPUProtocolEntities(ctx); err != nil {
 		return err
 	}
 	go s.logger.Run(ctx)
@@ -74,7 +74,11 @@ func (s *Setup) Init(ctx context.Context) error {
 }
 
 func (s *Setup) Run(ctx context.Context) error {
-	defer s.Exit()
+	defer func() {
+		ctxShutdown, cancel := context.WithTimeout(context.WithoutCancel(ctx), 1*time.Second)
+		defer cancel()
+		s.Exit(ctxShutdown)
+	}()
 	if err := s.Init(ctx); err != nil {
 		return err
 	}
@@ -82,7 +86,7 @@ func (s *Setup) Run(ctx context.Context) error {
 	return nil
 }
 
-func (s *Setup) Exit() error {
-	s.removeTun()
+func (s *Setup) Exit(ctx context.Context) error {
+	s.removeTun(ctx)
 	return nil
 }

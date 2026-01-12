@@ -6,19 +6,17 @@
 package app
 
 import (
-	"os"
+	"context"
 	"os/exec"
 
 	"github.com/sirupsen/logrus"
 )
 
-func runIP(args ...string) error {
-	cmd := exec.Command("ip", args...)
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
-	cmd.Stdin = os.Stdin
+func runIP(ctx context.Context, args ...string) error {
+	cmd := exec.CommandContext(ctx, "ip", args...)
+	cmd.Env = []string{}
 	err := cmd.Run()
-	if nil != err {
+	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"command":   cmd.Args[0],
 			"arguments": args,
@@ -28,13 +26,11 @@ func runIP(args ...string) error {
 	return nil
 }
 
-func runIPTables(args ...string) error {
-	cmd := exec.Command("iptables", args...)
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
-	cmd.Stdin = os.Stdin
+func runIPTables(ctx context.Context, args ...string) error {
+	cmd := exec.CommandContext(ctx, "iptables", args...)
+	cmd.Env = []string{}
 	err := cmd.Run()
-	if nil != err {
+	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"command":   cmd.Args[0],
 			"arguments": args,
@@ -44,13 +40,11 @@ func runIPTables(args ...string) error {
 	return nil
 }
 
-func runIP6Tables(args ...string) error {
-	cmd := exec.Command("ip6tables", args...)
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
-	cmd.Stdin = os.Stdin
+func runIP6Tables(ctx context.Context, args ...string) error {
+	cmd := exec.CommandContext(ctx, "ip6tables", args...)
+	cmd.Env = []string{}
 	err := cmd.Run()
-	if nil != err {
+	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"command":   cmd.Args[0],
 			"arguments": args,
