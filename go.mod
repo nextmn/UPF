@@ -1,6 +1,6 @@
 module github.com/nextmn/upf
 
-go 1.26.6
+go 1.27.0
 
 require (
 	github.com/google/gopacket v1.1.19
@@ -12,16 +12,13 @@ require (
 	github.com/urfave/cli/v3 v3.11.0
 	github.com/wmnsk/go-gtp v0.8.12
 	github.com/wmnsk/go-pfcp v0.0.24
-	gopkg.in/yaml.v3 v3.0.1
+	go.yaml.in/yaml/v3 v3.0.5
 )
 
 require (
 	github.com/adrg/xdg v0.5.3 // indirect
-	github.com/kr/pretty v0.3.1 // indirect
-	github.com/rogpeppe/go-internal v1.10.0 // indirect
 	github.com/vishvananda/netlink v1.3.1 // indirect
 	github.com/vishvananda/netns v0.0.5 // indirect
 	golang.org/x/net v0.58.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
-	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 )
