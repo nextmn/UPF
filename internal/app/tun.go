@@ -80,7 +80,7 @@ func (s *Setup) createTun(ctx context.Context) error {
 		DeviceType: water.TUN,
 	}
 	if s.config.Gtpu.TunInterfaceName != nil {
-		config.Name = *s.config.Gtpu.TunInterfaceName
+		config.PlatformSpecificParams = platformSpecificParams(*s.config.Gtpu.TunInterfaceName)
 	}
 	iface, err := water.New(config)
 	if nil != err {
