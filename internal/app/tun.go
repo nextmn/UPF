@@ -29,22 +29,19 @@ func (s *Setup) createTUNInterface(ctx context.Context) error {
 	}
 	go func(ctx context.Context) error {
 		for {
-			select {
-			case <-ctx.Done():
-				return ctx.Err()
-			default:
-				packet := make([]byte, constants.MTU_GTP_TUN)
-				n, err := s.tunInterface.Read(packet)
-				if err != nil {
-					return err
-				}
-				go func(ctx context.Context, packet []byte, db *FARAssociationDB, tuniface *water.Interface, pfcpServer *pfcp_networking.PFCPEntityUP) {
-					err := ipPacketHandler(ctx, gtpEntity, packet, db, tuniface, pfcpServer)
-					if err != nil {
-						logrus.WithError(err).Debug("Drop packet")
-					}
-				}(ctx, packet[:n], s.farUconnDb, s.tunInterface, s.pfcpServer)
+			if err := ctx.Err(); err != nil {
+				return err
 			}
+			packet := make([]byte, constants.MTU_GTP_TUN)
+			n, err := s.tunInterface.Read(packet)
+			if err != nil {
+				return err
+			}
+			go func(ctx context.Context, packet []byte, db *FARAssociationDB, tuniface *water.Interface, pfcpServer *pfcp_networking.PFCPEntityUP) {
+				if err := ipPacketHandler(ctx, gtpEntity, packet, db, tuniface, pfcpServer); err != nil {
+					logrus.WithError(err).Debug("Drop packet")
+				}
+			}(ctx, packet[:n], s.farUconnDb, s.tunInterface, s.pfcpServer)
 		}
 	}(ctx)
 	return nil
