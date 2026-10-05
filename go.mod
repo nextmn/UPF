@@ -9,7 +9,7 @@ require (
 	github.com/nextmn/logrus-formatter v0.2.4
 	github.com/sirupsen/logrus v1.10.2
 	github.com/songgao/water v0.0.0-20200317203138-2b4b6d7c09d8
-	github.com/urfave/cli/v3 v3.13.0
+	github.com/urfave/cli/v3 v3.14.0
 	github.com/wmnsk/go-gtp v0.8.12
 	github.com/wmnsk/go-pfcp v0.0.24
 	go.yaml.in/yaml/v3 v3.0.5
