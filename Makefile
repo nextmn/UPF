@@ -11,9 +11,9 @@ MKDIRP = mkdir -p
 .PHONY: install uninstall update build clean default
 default: build
 build:
-	go build
+	@CGO_ENABLED=0 go build -tags urfave_cli_no_template -ldflags="-s -w" -trimpath
 clean:
-	go clean
+	@go clean
 reinstall: uninstall install
 install:
 	$(INSTALL) upf $(DESTDIR)$(bindir)/upf
