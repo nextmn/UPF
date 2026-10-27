@@ -89,7 +89,7 @@ func ipPacketHandler(ctx context.Context, gtpEntity netip.Addr, packet []byte, d
 	return nil
 }
 
-func tpduHandler(ctx context.Context, iface netip.Addr, c gtpv1.Conn, senderAddr net.Addr, msg message.Message, db *FARAssociationDB, tuniface *water.Interface, pfcpServer *pfcp_networking.PFCPEntityUP) error {
+func tpduHandler(ctx context.Context, iface netip.Addr, _ gtpv1.Conn, senderAddr net.Addr, msg message.Message, db *FARAssociationDB, tuniface *water.Interface, pfcpServer *pfcp_networking.PFCPEntityUP) error {
 	logrus.WithFields(logrus.Fields{
 		"sender":    senderAddr,
 		"teid":      msg.TEID(),
@@ -280,9 +280,6 @@ func handleIncommingPacket(ctx context.Context, gtpIface netip.Addr, db *FARAsso
 		case ohc.HasTEID(): // Outer Header Creation
 			// forward over GTP/UDP/IP
 			gpdu := message.NewHeaderWithExtensionHeaders(0x30, message.MsgTypeTPDU, ohcfields.TEID, 0, packet, gtpHeaders...)
-			if err != nil {
-				return err
-			}
 			tlm, err := fp.TransportLevelMarking()
 			if err == nil {
 				return forwardGTP(ctx, gtpIface, gpdu, netIpAddr, int(tlm>>8), session, farid, db)

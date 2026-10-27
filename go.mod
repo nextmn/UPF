@@ -1,6 +1,6 @@
 module github.com/nextmn/upf
 
-go 1.27.1
+go 1.27.3
 
 require (
 	github.com/google/gopacket v1.1.19
@@ -19,6 +19,6 @@ require (
 	github.com/adrg/xdg v0.5.3 // indirect
 	github.com/vishvananda/netlink v1.3.1 // indirect
 	github.com/vishvananda/netns v0.0.5 // indirect
-	golang.org/x/net v0.58.0 // indirect
-	golang.org/x/sys v0.48.0 // indirect
+	golang.org/x/net v0.61.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
 )
