@@ -12,7 +12,7 @@ require (
 	github.com/urfave/cli/v3 v3.14.0
 	github.com/wmnsk/go-gtp v0.8.12
 	github.com/wmnsk/go-pfcp v0.0.24
-	go.yaml.in/yaml/v3 v3.0.5
+	go.yaml.in/yaml/v3 v3.0.6
 )
 
 require (
