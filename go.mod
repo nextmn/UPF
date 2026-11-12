@@ -12,13 +12,14 @@ require (
 	github.com/urfave/cli/v3 v3.14.0
 	github.com/wmnsk/go-gtp v0.8.12
 	github.com/wmnsk/go-pfcp v0.0.24
-	go.yaml.in/yaml/v3 v3.0.6
+	go.yaml.in/yaml/v4 v4.0.0
 )
 
 require (
 	github.com/adrg/xdg v0.5.3 // indirect
 	github.com/vishvananda/netlink v1.3.1 // indirect
 	github.com/vishvananda/netns v0.0.5 // indirect
+	go.yaml.in/yaml/v3 v3.0.6 // indirect
 	golang.org/x/net v0.61.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect
 )

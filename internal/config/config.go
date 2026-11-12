@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 )
 
 func ParseConf(file string) (*UpfConfig, error) {
@@ -24,7 +24,7 @@ func ParseConf(file string) (*UpfConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = yaml.Unmarshal(yamlFile, &conf)
+	err = yaml.Load(yamlFile, &conf)
 	if err != nil {
 		return nil, err
 	}
